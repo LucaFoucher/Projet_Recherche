@@ -2,7 +2,8 @@ import numpy as np
 import csv
 import geometries
 import itertools
-
+from scipy.interpolate import CubicSpline
+import matplotlib.pyplot as plt
 
 class Trajectory ():
     def __init__(
@@ -167,23 +168,45 @@ class Trajectory ():
         Calculates the maximum of the RDF to be used as the average distance
         in generating ideal structures
         '''
-        max = 0.0
-        maxIndex = 0
-        count = 0
-        breakCount = 0
+        #max = 0.0
+        #maxIndex = 0
+        #count = 0
+        #breakCount = 0
+        
         # on parcourt les valeurs de la rdf, on récupère la valeur de la rdf tant que la rdf
         # est croissante et on récupère l'index a chaque fois
         # quand la rdf commence a decroitre on incrémente breakcount jusqu'a 5
-        for i, value in enumerate(self.rdf):		
-            if (value <= max) and (max != 0.0):
-                breakCount += 1
-            if (value > max):
-                max = value
-                maxIndex = i
-            if (breakCount > 5): # 5 seems to work well for break count with binSize 0.02 or larger, 10 works for binSize 0.01
-                self.dist = maxIndex*self.binSize
-                break
-            count += 1
+        
+        #for i, value in enumerate(self.rdf):		
+         #   if (value <= max) and (max != 0.0):
+          #      breakCount += 1
+           # if (value > max):
+            #    max = value
+             #   maxIndex = i
+            #if (breakCount > 5): # 5 seems to work well for break count with binSize 0.02 or larger, 10 works for binSize 0.01
+             #   self.dist = maxIndex*self.binSize
+              #  break
+            #count += 1
+            
+        bin = self.binSize # bin size is not adjustable by user and is set at 0.05 A
+        r_max = 6.0 # the max the rdf will go to is 6 A
+        data_num = int(r_max / bin)
+        
+        x= np.arange(data_num)
+        x=x/(data_num/r_max)
+        spline = CubicSpline(x, self.rdf)
+        derivative = spline.derivative()
+        roots = derivative.roots()
+        
+        Max=0
+        
+        for i in roots:
+            if spline(i) > Max:
+                Max = spline(i)
+                max_ind=i
+        
+        
+        self.dist = max_ind
 
     def getMaxR(self):
         '''
